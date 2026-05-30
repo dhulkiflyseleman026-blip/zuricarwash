@@ -102,7 +102,16 @@ select option{background:var(--navy);color:var(--white)}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.success{border-color:#22c55e}
 .toast.error{border-color:#ef4444}
-footer{border-top:1px solid var(--border);padding:2.5rem 2rem;text-align:center;color:var(--muted);font-size:.82rem;line-height:1.8}
+footer{border-top:1px solid var(--border);padding:3rem 2rem;text-align:center;color:var(--muted);font-size:.82rem;line-height:1.8}
+.help-box{background:rgba(26,107,255,.07);border:1px solid var(--border);border-radius:10px;padding:2rem;max-width:560px;margin:0 auto 2.5rem}
+.help-box h4{font-family:"Bebas Neue",sans-serif;font-size:1.6rem;letter-spacing:.05em;color:var(--white);margin-bottom:.4rem}
+.help-box p{color:var(--muted);font-size:.84rem;margin-bottom:1.4rem;line-height:1.6}
+.contact-links{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
+.clink{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.2rem;border-radius:5px;font-family:"Rajdhani",sans-serif;font-size:.88rem;font-weight:700;letter-spacing:.06em;text-decoration:none;transition:transform .2s,box-shadow .2s;text-transform:uppercase}
+.clink:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.clink.call{background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.3);color:var(--sky)}
+.clink.email{background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.3);color:var(--gold)}
+.clink.whatsapp{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#22c55e}
 footer strong{color:var(--white);font-family:'Rajdhani',sans-serif;font-size:1rem;letter-spacing:.06em}
 </style>
 </head>
@@ -173,7 +182,7 @@ footer strong{color:var(--white);font-family:'Rajdhani',sans-serif;font-size:1re
       </div>
       <div class="box">
         <h3 class="f-title">Mobile Money Payment</h3>
-        <p class="f-sub">Powered by PawaPay — safe &amp; instant payments across Tanzania.</p>
+        <p class="f-sub">Powered by ClickPesa — safe &amp; instant mobile money payments across Tanzania.</p>
         <div class="fg">
           <label for="custName">Full Name</label>
           <input type="text" id="custName" placeholder="e.g. John Mwangi"/>
@@ -195,46 +204,52 @@ footer strong{color:var(--white);font-family:'Rajdhani',sans-serif;font-size:1re
         </div>
         <button class="pay-btn" id="payBtn" onclick="pay()" disabled>
           <span class="spinner"></span>
-          <span class="bt">🔒 Pay Now via PawaPay</span>
+          <span class="bt">🔒 Pay Now via ClickPesa</span>
         </button>
-        <div class="secure">🔐 Secured by PawaPay · No card details needed</div>
+        <div class="secure">🔐 Secured by ClickPesa · No card details needed</div>
       </div>
     </div>
 
-    <!-- Official PawaPay sandbox test numbers -->
-    <div class="test-box">
-      <h4>🧪 Sandbox Test Numbers — Tanzania (Official PawaPay Docs)</h4>
-      <div class="tgrid">
-        <div class="tn"><span class="net">Vodacom (VODACOM_TZA)</span><span class="num">255763456789 <span class="ok">✓ COMPLETED</span></span></div>
-        <div class="tn"><span class="net">Vodacom — SUBMITTED</span><span class="num">255763456129 <span class="ok">↻ SUBMITTED</span></span></div>
-        <div class="tn"><span class="net">Airtel (AIRTEL_TZA)</span><span class="num">255683456789 <span class="ok">✓ COMPLETED</span></span></div>
-        <div class="tn"><span class="net">Airtel — SUBMITTED</span><span class="num">255683456129 <span class="ok">↻ SUBMITTED</span></span></div>
-        <div class="tn"><span class="net">Tigo (TIGO_TZA)</span><span class="num">255713456789 <span class="ok">✓ COMPLETED</span></span></div>
-        <div class="tn"><span class="net">Tigo — SUBMITTED</span><span class="num">255713456129 <span class="ok">↻ SUBMITTED</span></span></div>
-        <div class="tn"><span class="net">Halotel (HALOTEL_TZA)</span><span class="num">255623456789 <span class="ok">✓ COMPLETED</span></span></div>
-        <div class="tn"><span class="net">Airtel — FAIL test</span><span class="num">255683456039 <span class="fail">✗ NOT APPROVED</span></span></div>
-      </div>
-    </div>
+
   </div>
 </section>
 
 <footer>
-  <strong>ZURI CARWASH & GARAGE</strong><br>
+  <!-- HELP SECTION -->
+  <div class="help-box">
+    <h4>Need Help? 🙋</h4>
+    <p>Our team is ready to assist you with bookings, payments, or any questions about our services. Reach us via call, email, or WhatsApp!</p>
+    <div class="contact-links">
+      <a href="tel:+255745383986" class="clink call">📞 Call Us</a>
+      <a href="mailto:dhulkiflyseleman026@gmail.com" class="clink email">✉️ Email Us</a>
+      <a href="https://wa.me/255745383986?text=Hello%20Zuri%20Carwash%2C%20I%20need%20help%20with%20my%20booking." target="_blank" class="clink whatsapp">💬 WhatsApp</a>
+    </div>
+    <div style="margin-top:1.2rem;font-size:.78rem;color:var(--muted)">
+      📞 +255 745 383 986 &nbsp;·&nbsp; ✉️ dhulkiflyseleman026@gmail.com
+    </div>
+  </div>
+
+  <strong>ZURI CARWASH AND GARAGE</strong><br>
   Tanzania · Professional Vehicle Care<br>
-  <span style="font-size:.76rem;">Payments powered by <a href="https://pawapay.io" target="_blank" style="color:var(--sky);text-decoration:none;">PawaPay</a> · Mobile Money · Secure &amp; Instant</span>
+  <span style="font-size:.76rem;">Payments powered by <a href="https://clickpesa.com" target="_blank" style="color:var(--sky);text-decoration:none;">ClickPesa</a> · Mobile Money · Secure &amp; Instant</span>
 </footer>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── PawaPay Config ─────────────────────────────────────────────
-const TOKEN     = 'eyJraWQiOiIxIiwiYWxnIjoiRVMyNTYifQ.eyJ0dCI6IkFBVCIsInN1YiI6IjIxNTQzIiwibWF2IjoiMSIsImV4cCI6MjA5NTY2MTQ5NywiaWF0IjoxNzgwMDQyMjk3LCJwbSI6IkRBRixQQUYiLCJqdGkiOiI0NmU0YWE5NC0wODQyLTQ4NTMtOGFlMi0zNTlkM2MyNmE3YjgifQ.qFZR7UHomA4XLuFQBZ-oepnIU45E85lLzB7ibOyvBA0E9YypGbGFVh1M1l2MnUUB9APHIzF29dkn18wEryHizQ';
-const RETURN_URL= 'https://zuriicarwash.netlify.app';
-// Sandbox endpoint — change to https://api.pawapay.io/v1/widget/sessions when going live
-const ENDPOINT  = 'https://api.sandbox.pawapay.io/v1/widget/sessions';
-// corsproxy.io lets the browser call PawaPay directly from a single HTML file
-const PROXY     = 'https://corsproxy.io/?url=';
-// ──────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// ⚙️  CLICKPESA CONFIGURATION (LIVE)
+// ══════════════════════════════════════════════════════════════
+const CP_CLIENT_ID  = 'ID3q2X8jExQ9a9MKusAIL8VAL7NjrXAF';  // Your ClickPesa Client ID
+const CP_API_KEY    = 'SKdMVVU637THxk8yLuCqgw02muxmclDWOnzSwr4nIv';  // Your ClickPesa API Key
+const RETURN_URL    = 'https://dhulkiflyseleman026-blip.github.io/zuricarwash';
+const WEBHOOK_URL   = 'https://dhulkiflyseleman026-blip.github.io/zuricarwash/webhook'; // Set this in ClickPesa dashboard
+// ClickPesa Live API endpoints
+const CP_AUTH_URL   = 'https://api.clickpesa.com/third-parties/generate-token';
+const CP_USSD_URL   = 'https://api.clickpesa.com/third-parties/payments/initiate-ussd-push-request';
+// CORS Proxy — required for browser-based single-file calls
+const PROXY         = 'https://corsproxy.io/?url=';
+// ══════════════════════════════════════════════════════════════
 
 const SERVICES=[
   {id:'m1',name:'Pressure Motorcycle Wash',     price:1000,  icon:'🏍️',cat:'motorcycle'},
@@ -295,6 +310,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const v=this.value.replace(/\D/g,'');
     const mn=document.getElementById('mno');
     const h=document.getElementById('hint');
+
     let d='',fb=false;
     if(v.startsWith('25574')||v.startsWith('25575')||v.startsWith('25576'))           d='VODACOM_TZA';
     else if(v.startsWith('25568')||v.startsWith('25578'))                              d='AIRTEL_TZA';
@@ -305,72 +321,99 @@ document.addEventListener('DOMContentLoaded',()=>{
       mn.value=d;
       const nm={VODACOM_TZA:'Vodacom M-Pesa',AIRTEL_TZA:'Airtel Money',TIGO_TZA:'Tigo Pesa',HALOTEL_TZA:'Halopesa'};
       h.textContent=fb?'⚠️ Network not detected — defaulting to Tigo Pesa. Please confirm above.':'📡 Auto-detected: '+nm[d];
+      h.style.color='';
       h.classList.add('on');
     } else {h.classList.remove('on');}
   });
   const p=new URLSearchParams(window.location.search);
-  if(p.get('depositId')) showToast('✅ Payment submitted! Thank you for choosing Zuri Carwash.','success');
+  if(p.get('orderReference')) showToast('✅ Payment submitted! Thank you for choosing Zuri Carwash.','success');
 });
 
-function uuid(){
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
-    const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);
-  });
+// ── Generate unique order reference (alphanumeric only per ClickPesa docs) ──
+function orderRef(){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let ref='ZURI';
+  for(let i=0;i<12;i++) ref+=chars.charAt(Math.floor(Math.random()*chars.length));
+  return ref; // e.g. ZURIaB3xK9mN2p
 }
+
+// ── ClickPesa Payment Flow (per official docs) ─────────────────
+// Step 1: POST /generate-token  → headers: client-id, api-key → get JWT token
+// Step 2: POST /payments/initiate-ussd-push-request → headers: Authorization: Bearer {token}, client-id
+//         body: { amount, currency, orderReference, phoneNumber }
+// Step 3: Customer receives USSD push on phone → enters PIN → payment done
+// Step 4: ClickPesa sends webhook to WEBHOOK_URL with payment result
+// ──────────────────────────────────────────────────────────────
 
 async function pay(){
   const name =document.getElementById('custName').value.trim();
   const phone=document.getElementById('phone').value.replace(/\D/g,'');
   const mno  =document.getElementById('mno').value;
   const btn  =document.getElementById('payBtn');
+
   if(!name)           return showToast('Please enter your full name.','error');
   if(phone.length<12) return showToast('Enter a valid number e.g. 255763456789','error');
   if(!mno)            return showToast('Please select your mobile network.','error');
   if(!sel.size)       return showToast('Please select at least one service.','error');
 
-  const items =([...sel]).map(id=>SERVICES.find(s=>s.id===id));
-  const total =items.reduce((s,i)=>s+i.price,0);
-  const depId =uuid();
-  const names =items.map(s=>s.name).join(', ');
-  const desc  =('ZuriWash'+names).replace(/[^a-zA-Z0-9]/g,'').substring(0,22).padEnd(4,'X');
+  const items      = [...sel].map(id=>SERVICES.find(s=>s.id===id));
+  const total      = items.reduce((s,i)=>s+i.price,0);
+  const orderReference = orderRef();
 
-  btn.classList.add('loading');btn.disabled=true;
-
-  const payload={
-    depositId:            depId,
-    returnUrl:            RETURN_URL,
-    statementDescription: desc,
-    amount:               String(total),
-    msisdn:               phone,
-    language:             'EN',
-    country:              'TZA',
-    reason:               'Zuri Carwash Services',
-    metadata:[
-      {fieldName:'customerName',fieldValue:name},
-      {fieldName:'services',    fieldValue:names.substring(0,100)},
-    ],
-  };
+  btn.classList.add('loading'); btn.disabled=true;
+  showToast('🔄 Connecting to ClickPesa...','');
 
   try {
-    const res =await fetch(PROXY+encodeURIComponent(ENDPOINT),{
-      method:'POST',
+    // ── STEP 1: Generate JWT Token ─────────────────────────────
+    const authRes  = await fetch(PROXY+encodeURIComponent(CP_AUTH_URL),{
+      method: 'POST',
       headers:{
-        'Content-Type' :'application/json',
-        'Authorization':'Bearer '+TOKEN,
+        'Content-Type': 'application/json',
+        'client-id':    CP_CLIENT_ID,
+        'api-key':      CP_API_KEY,
       },
-      body:JSON.stringify(payload),
     });
-    const data=await res.json();
-    if(data.redirectUrl){
-      showToast('✅ Redirecting to PawaPay...','success');
-      setTimeout(()=>{window.location.href=data.redirectUrl;},900);
+    const authText = await authRes.text();
+    if(!authText||authText.trim()==='') throw new Error('No response from ClickPesa auth. Check your API Key.');
+    let authData;
+    try{ authData=JSON.parse(authText); } catch(e){ throw new Error('Auth response invalid: '+authText.substring(0,80)); }
+    if(!authData.success||!authData.token) throw new Error(authData.message||'Failed to get ClickPesa token.');
+    const token = authData.token; // already includes "Bearer " prefix per ClickPesa docs
+
+    // ── STEP 2: Initiate USSD Push ─────────────────────────────
+    const payload={
+      amount:         String(total),
+      currency:       'TZS',
+      orderReference: orderReference,
+      phoneNumber:    phone,
+      // checksum is optional — not set since not mandatory
+    };
+
+    const res      = await fetch(PROXY+encodeURIComponent(CP_USSD_URL),{
+      method: 'POST',
+      headers:{
+        'Content-Type': 'application/json',
+        'Authorization': token,   // ClickPesa token already has "Bearer " prefix
+        'client-id':    CP_CLIENT_ID,
+      },
+      body: JSON.stringify(payload),
+    });
+    const resText  = await res.text();
+    if(!resText||resText.trim()==='') throw new Error('No response from ClickPesa checkout. Please try again.');
+    let data;
+    try{ data=JSON.parse(resText); } catch(e){ throw new Error('Checkout response invalid: '+resText.substring(0,80)); }
+
+    if(res.ok && (data.id||data.status==='PROCESSING'||data.status==='SUCCESS')){
+      showToast('✅ Payment request sent! Check your phone for the USSD prompt — enter your PIN to complete.','success');
+      // Redirect to return URL after 4 seconds with order reference
+      setTimeout(()=>{ window.location.href=RETURN_URL+'?orderReference='+orderReference; },4000);
     } else {
-      showToast('❌ '+(data.errorMessage||data.error||JSON.stringify(data)),'error');
-      btn.classList.remove('loading');btn.disabled=false;
+      throw new Error(data.message||data.error||JSON.stringify(data));
     }
+
   } catch(e){
-    showToast('❌ Error: '+e.message,'error');
-    btn.classList.remove('loading');btn.disabled=false;
+    showToast('❌ '+e.message,'error');
+    btn.classList.remove('loading'); btn.disabled=false;
   }
 }
 
