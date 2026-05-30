@@ -240,8 +240,9 @@ footer strong{color:var(--white);font-family:'Rajdhani',sans-serif;font-size:1re
 // ══════════════════════════════════════════════════════════════
 // ⚙️  CLICKPESA CONFIGURATION (LIVE)
 // ══════════════════════════════════════════════════════════════
-const CP_CLIENT_ID  = 'ID3q2X8jExQ9a9MKusAIL8VAL7NjrXAF';  // Your ClickPesa Client ID
-const CP_API_KEY    = 'SKdMVVU637THxk8yLuCqgw02muxmclDWOnzSwr4nIv';  // Your ClickPesa API Key
+const CP_CLIENT_ID   = 'ID3q2X8jExQ9a9MKusAIL8VAL7NjrXAF';       // Your ClickPesa Client ID
+const CP_API_KEY     = 'SKdMVVU637THxk8yLuCqgw02muxmclDWOnzSwr4nIv';       // Your ClickPesa API Key
+const CP_CHECKSUM_KEY= 'CHKmKXukV0r5ev1gwy2vRwYATtrGlkq3lZ4';              // Your ClickPesa Checksum Key
 const RETURN_URL    = 'https://dhulkiflyseleman026-blip.github.io/zuricarwash';
 const WEBHOOK_URL   = 'https://dhulkiflyseleman026-blip.github.io/zuricarwash/webhook'; // Set this in ClickPesa dashboard
 // ClickPesa Live API endpoints
@@ -329,6 +330,30 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(p.get('orderReference')) showToast('✅ Payment submitted! Thank you for choosing Zuri Carwash.','success');
 });
 
+// ── Checksum generation per ClickPesa docs ────────────────────
+// Steps: 1) Canonicalize (sort keys recursively) 2) JSON.stringify 3) HMAC-SHA256 hex
+function canonicalize(obj){
+  if(obj===null||typeof obj!=='object') return obj;
+  if(Array.isArray(obj)) return obj.map(canonicalize);
+  return Object.keys(obj).sort().reduce((acc,key)=>{
+    acc[key]=canonicalize(obj[key]); return acc;
+  },{});
+}
+
+async function createChecksum(checksumKey, payload){
+  // Use SubtleCrypto (available in all modern browsers) for HMAC-SHA256
+  const encoder  = new TextEncoder();
+  const keyData  = encoder.encode(checksumKey);
+  const payloadStr = JSON.stringify(canonicalize(payload));
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyData, {name:'HMAC',hash:'SHA-256'}, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(payloadStr));
+  // Convert ArrayBuffer to hex string
+  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+// ──────────────────────────────────────────────────────────────
+
 // ── Generate unique order reference (alphanumeric only per ClickPesa docs) ──
 function orderRef(){
   const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -381,13 +406,17 @@ async function pay(){
     const token = authData.token; // already includes "Bearer " prefix per ClickPesa docs
 
     // ── STEP 2: Initiate USSD Push ─────────────────────────────
+    // Build payload WITHOUT checksum field first (required for correct checksum calculation)
     const payload={
       amount:         String(total),
       currency:       'TZS',
       orderReference: orderReference,
       phoneNumber:    phone,
-      // checksum is optional — not set since not mandatory
     };
+    // Generate checksum from payload (excluding checksum & checksumMethod per docs)
+    const checksum = await createChecksum(CP_CHECKSUM_KEY, payload);
+    // Now add checksum to payload for the actual request
+    payload.checksum = checksum;
 
     const res      = await fetch(PROXY+encodeURIComponent(CP_USSD_URL),{
       method: 'POST',
