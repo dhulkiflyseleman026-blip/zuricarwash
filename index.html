@@ -365,19 +365,19 @@ async function pay(){
 
   try {
     // ── STEP 1: Generate JWT Token ─────────────────────────────
+    // Auth: POST with ONLY headers — no body, no Content-Type (per ClickPesa docs)
     const authRes  = await fetch(PROXY+encodeURIComponent(CP_AUTH_URL),{
       method: 'POST',
       headers:{
-        'Content-Type': 'application/json',
-        'client-id':    CP_CLIENT_ID,
-        'api-key':      CP_API_KEY,
+        'client-id': CP_CLIENT_ID,
+        'api-key':   CP_API_KEY,
       },
     });
     const authText = await authRes.text();
     if(!authText||authText.trim()==='') throw new Error('No response from ClickPesa auth. Check your API Key.');
     let authData;
     try{ authData=JSON.parse(authText); } catch(e){ throw new Error('Auth response invalid: '+authText.substring(0,80)); }
-    if(!authData.success||!authData.token) throw new Error(authData.message||'Failed to get ClickPesa token.');
+    if(!authData.success||!authData.token) throw new Error('Auth failed ('+authRes.status+'): '+(authData.message||JSON.stringify(authData)));
     const token = authData.token; // already includes "Bearer " prefix per ClickPesa docs
 
     // ── STEP 2: Initiate USSD Push ─────────────────────────────
@@ -386,7 +386,6 @@ async function pay(){
       currency:       'TZS',
       orderReference: orderReference,
       phoneNumber:    phone,
-      // checksum is optional — not set since not mandatory
     };
 
     const res      = await fetch(PROXY+encodeURIComponent(CP_USSD_URL),{
