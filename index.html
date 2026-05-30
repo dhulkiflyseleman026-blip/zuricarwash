@@ -238,22 +238,25 @@ footer strong{color:var(--white);font-family:'Rajdhani',sans-serif;font-size:1re
 
 <script>
 // ══════════════════════════════════════════════════════════════
-// ⚙️  CLICKPESA CONFIGURATION (LIVE)
+// ⚙️  CLICKPESA CONFIGURATION — Zuri Carwash & Garage
 // ══════════════════════════════════════════════════════════════
-const CP_CLIENT_ID   = 'ID3q2X8jExQ9a9MKusAIL8VAL7NjrXAF';
-const CP_CHECKSUM_KEY= 'CHKmKXukV0r5ev1gwy2vRwYATtrGlkq3lZ4'; // Your ClickPesa Checksum Key
-const CP_API_KEY    = 'SKNH6w6Zs1jBSfdWNDZVP8L6oS1KcBiaFGrH4i21x4';  // Your ClickPesa API Key
-const RETURN_URL    = 'https://dhulkiflyseleman026-blip.github.io/zuricarwash';
-const WEBHOOK_URL   = 'https://dhulkiflyseleman026-blip.github.io/zuricarwash/webhook'; // Set this in ClickPesa dashboard
+const CP_CLIENT_ID = 'ID3q2X8jExQ9a9MKusAIL8VAL7NjrXAF';
+const CP_API_KEY   = 'SKukxg7BroljqxATfcoTCxFVggmvLyvNckn35G0sy7';
+const RETURN_URL   = 'https://dhulkiflyseleman026-blip.github.io/zuricarwash';
+// NOTE: Checksum is DISABLED in your ClickPesa dashboard — do NOT send it.
+// Webhooks (PAYMENT RECEIVED, PAYMENT FAILED, PAYMENT INITIATED,
+//           PAYMENT REFUNDED, PAYMENT REVERSED) must be configured in your
+// ClickPesa Dashboard → Settings → Developers → Application Webhooks
+// pointing to: https://dhulkiflyseleman026-blip.github.io/zuricarwash/webhook
 // ClickPesa Live API endpoints
-const CP_AUTH_URL   = 'https://api.clickpesa.com/third-parties/generate-token';
-const CP_USSD_URL   = 'https://api.clickpesa.com/third-parties/payments/initiate-ussd-push-request';
-// CORS Proxies — tried in order until one works (custom headers need proper forwarding)
-const PROXIES = [
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  url => `https://cors-anywhere.herokuapp.com/${url}`,
-];
+const CP_AUTH_URL  = 'https://api.clickpesa.com/third-parties/generate-token';
+const CP_USSD_URL  = 'https://api.clickpesa.com/third-parties/payments/initiate-ussd-push-request';
+const CP_STATUS_URL= 'https://api.clickpesa.com/third-parties/payments/';
+// ── CORS proxy strategy ────────────────────────────────────────
+// corsproxy.io is the most reliable for forwarding custom headers.
+// We build the URL so the proxy sees the full target URL in the query string.
+// Do NOT use allorigins — it strips custom headers before forwarding.
+const PROXY = url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
 // ══════════════════════════════════════════════════════════════
 
 const SERVICES=[
@@ -334,50 +337,21 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(p.get('orderReference')) showToast('✅ Payment submitted! Thank you for choosing Zuri Carwash.','success');
 });
 
-// ── Generate HMAC-SHA256 checksum (ClickPesa docs) ────────────
-function canonicalize(obj){
-  if(obj===null||typeof obj!=='object') return obj;
-  if(Array.isArray(obj)) return obj.map(canonicalize);
-  return Object.keys(obj).sort().reduce((a,k)=>{a[k]=canonicalize(obj[k]);return a;},{});
-}
-async function genChecksum(key, payload){
-  const enc = new TextEncoder();
-  const k   = await crypto.subtle.importKey('raw',enc.encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);
-  const sig  = await crypto.subtle.sign('HMAC',k,enc.encode(JSON.stringify(canonicalize(payload))));
-  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-// ──────────────────────────────────────────────────────────────
-
-// ── Generate unique order reference (alphanumeric only per ClickPesa docs) ──
+// ── Generate unique order reference (alphanumeric only, per ClickPesa docs) ──
 function orderRef(){
   const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let ref='ZURI';
   for(let i=0;i<12;i++) ref+=chars.charAt(Math.floor(Math.random()*chars.length));
-  return ref; // e.g. ZURIaB3xK9mN2p
+  return ref;
 }
 
-// ── ClickPesa Payment Flow (per official docs) ─────────────────
-// Step 1: POST /generate-token  → headers: client-id, api-key → get JWT token
-// Step 2: POST /payments/initiate-ussd-push-request → headers: Authorization: Bearer {token}, client-id
-//         body: { amount, currency, orderReference, phoneNumber }
-// Step 3: Customer receives USSD push on phone → enters PIN → payment done
-// Step 4: ClickPesa sends webhook to WEBHOOK_URL with payment result
+// ── ClickPesa Payment Flow ─────────────────────────────────────
+// Step 1: POST /generate-token  — headers only: client-id + api-key → JWT token
+// Step 2: POST /payments/initiate-ussd-push-request — body: amount, currency,
+//         orderReference, phoneNumber (NO checksum — disabled in dashboard)
+// Step 3: Customer receives USSD push → enters PIN → done
+// Step 4: ClickPesa POSTs webhook to your configured callback URL
 // ──────────────────────────────────────────────────────────────
-
-// ── Try each proxy in turn for a fetch call ───────────────────
-async function fetchWithProxy(url, options){
-  let lastErr;
-  for(const proxyFn of PROXIES){
-    try{
-      const r = await fetch(proxyFn(url), options);
-      // allorigins wraps errors as 200 with HTML sometimes — skip if clearly wrong
-      const ct = r.headers.get('content-type')||'';
-      if(!r.ok && r.status===0) continue;
-      return r;
-    } catch(e){ lastErr=e; }
-  }
-  throw lastErr||new Error('All proxies failed. Check your internet connection.');
-}
 
 async function pay(){
   const name =document.getElementById('custName').value.trim();
@@ -390,8 +364,8 @@ async function pay(){
   if(!mno)            return showToast('Please select your mobile network.','error');
   if(!sel.size)       return showToast('Please select at least one service.','error');
 
-  const items      = [...sel].map(id=>SERVICES.find(s=>s.id===id));
-  const total      = items.reduce((s,i)=>s+i.price,0);
+  const items          = [...sel].map(id=>SERVICES.find(s=>s.id===id));
+  const total          = items.reduce((s,i)=>s+i.price,0);
   const orderReference = orderRef();
 
   btn.classList.add('loading'); btn.disabled=true;
@@ -399,52 +373,66 @@ async function pay(){
 
   try {
     // ── STEP 1: Generate JWT Token ─────────────────────────────
-    // Auth: POST with ONLY headers — no body, no Content-Type (per ClickPesa docs)
-    const authRes  = await fetchWithProxy(CP_AUTH_URL,{
+    // Docs: POST /generate-token with ONLY client-id and api-key headers.
+    // No body, no Content-Type header. The proxy must forward custom headers.
+    const authRes = await fetch(PROXY(CP_AUTH_URL), {
       method: 'POST',
-      headers:{
+      headers: {
         'client-id': CP_CLIENT_ID,
         'api-key':   CP_API_KEY,
       },
     });
+
     const authText = await authRes.text();
-    if(!authText||authText.trim()==='') throw new Error('No response from ClickPesa auth. Check your API Key.');
+    if(!authText || authText.trim()==='')
+      throw new Error('Empty response from ClickPesa auth. Check your network.');
+
     let authData;
-    try{ authData=JSON.parse(authText); } catch(e){ throw new Error('Auth response invalid: '+authText.substring(0,120)); }
-    if(!authData.success||!authData.token) throw new Error('Auth failed ('+authRes.status+'): '+(authData.message||JSON.stringify(authData)));
-    const token = authData.token; // already includes "Bearer " prefix per ClickPesa docs
+    try { authData = JSON.parse(authText); }
+    catch(e) { throw new Error('Auth response not JSON: '+authText.substring(0,160)); }
+
+    // Docs: 403 = "Unauthorized API-Key" / "Invalid or Expired API-Key"
+    //        401 = "Unauthorized" (missing headers)
+    if(!authData.success || !authData.token)
+      throw new Error('Auth failed ('+(authRes.status)+'): '+(authData.message||JSON.stringify(authData)));
+
+    // Docs: token already includes the "Bearer " prefix
+    const token = authData.token;
 
     // ── STEP 2: Initiate USSD Push ─────────────────────────────
-    // Build payload first WITHOUT checksum (required for correct hash)
-    const payload={
+    // Docs: checksum is OPTIONAL — only send if enabled in dashboard.
+    // Since checksum is disabled for this account, omit it entirely.
+    const payload = {
       amount:         String(total),
       currency:       'TZS',
       orderReference: orderReference,
       phoneNumber:    phone,
     };
-    // Generate checksum and add to payload (per ClickPesa docs)
-    payload.checksum = await genChecksum(CP_CHECKSUM_KEY, payload);
 
-    const res      = await fetchWithProxy(CP_USSD_URL,{
+    const pushRes = await fetch(PROXY(CP_USSD_URL), {
       method: 'POST',
-      headers:{
+      headers: {
         'Content-Type': 'application/json',
-        'Authorization': token,   // ClickPesa token already has "Bearer " prefix
+        'Authorization': token,      // already has "Bearer " prefix per docs
         'client-id':    CP_CLIENT_ID,
       },
       body: JSON.stringify(payload),
     });
-    const resText  = await res.text();
-    if(!resText||resText.trim()==='') throw new Error('No response from ClickPesa checkout. Please try again.');
-    let data;
-    try{ data=JSON.parse(resText); } catch(e){ throw new Error('Checkout response invalid: '+resText.substring(0,120)); }
 
-    if(res.ok && (data.id||data.status==='PROCESSING'||data.status==='SUCCESS')){
-      showToast('📲 Check your phone! Enter your PIN to complete payment...','success');
-      // Poll payment status every 5 seconds for 15 seconds (3 attempts)
+    const pushText = await pushRes.text();
+    if(!pushText || pushText.trim()==='')
+      throw new Error('Empty response from ClickPesa. Please try again.');
+
+    let data;
+    try { data = JSON.parse(pushText); }
+    catch(e) { throw new Error('Push response not JSON: '+pushText.substring(0,160)); }
+
+    if(pushRes.ok && data.id && (data.status==='PROCESSING'||data.status==='SUCCESS')){
+      showToast('📲 Check your phone! Enter your M-Pesa / Airtel / Tigo PIN to complete payment.','success');
       pollPaymentStatus(orderReference, token, btn);
     } else {
-      throw new Error(JSON.stringify(data));
+      // Surface the exact ClickPesa error message to help debug
+      throw new Error((data.message || JSON.stringify(data)));
     }
 
   } catch(e){
@@ -453,33 +441,34 @@ async function pay(){
   }
 }
 
-// ── Poll payment status — 3 attempts × 5s = 15 seconds ────────
-const CP_STATUS_URL = 'https://api.clickpesa.com/third-parties/payments/';
-
+// ── Poll payment status — 6 attempts × 5s = 30 seconds ────────
 async function pollPaymentStatus(orderReference, token, btn){
-  const maxAttempts = 3; // 3 × 5s = 15 seconds
-  let attempts = 0;
+  const maxAttempts = 6;
+  let   attempts    = 0;
 
   const interval = setInterval(async()=>{
     attempts++;
     try {
-      const statusRes  = await fetchWithProxy(CP_STATUS_URL+orderReference,{
-        method:'GET',
-        headers:{
+      const statusRes  = await fetch(PROXY(CP_STATUS_URL+orderReference), {
+        method: 'GET',
+        headers: {
           'Authorization': token,
           'client-id':     CP_CLIENT_ID,
         },
       });
       const statusText = await statusRes.text();
       const statusData = JSON.parse(statusText);
+      // API returns object or array — normalise to single payment object
       const payment    = Array.isArray(statusData) ? statusData[0] : statusData;
       const payStatus  = payment?.status;
 
       if(payStatus==='SUCCESS'||payStatus==='SETTLED'){
         clearInterval(interval);
-        showToast('✅ Payment successful! TZS '+payment.collectedAmount+' received. Thank you!','success');
+        showToast('✅ Payment of TZS '+payment.collectedAmount+' received! Thank you for choosing Zuri Carwash.','success');
         btn.classList.remove('loading'); btn.disabled=false;
-        setTimeout(()=>{ window.location.href=RETURN_URL+'?orderReference='+orderReference+'&status=SUCCESS'; },2500);
+        setTimeout(()=>{
+          window.location.href=RETURN_URL+'?orderReference='+orderReference+'&status=SUCCESS';
+        },2500);
 
       } else if(payStatus==='FAILED'){
         clearInterval(interval);
@@ -488,25 +477,25 @@ async function pollPaymentStatus(orderReference, token, btn){
 
       } else if(attempts>=maxAttempts){
         clearInterval(interval);
-        showToast('⏳ Payment timed out. If you paid please wait a moment and check with us.','error');
+        showToast('⏳ Still waiting for payment confirmation. If you paid, please wait a moment — we will update automatically.','');
         btn.classList.remove('loading'); btn.disabled=false;
       }
 
     } catch(e){
       if(attempts>=maxAttempts){
         clearInterval(interval);
-        showToast('❌ Could not confirm payment. Please check your ClickPesa dashboard.','error');
+        showToast('❌ Could not confirm payment status. Please check your ClickPesa dashboard.','error');
         btn.classList.remove('loading'); btn.disabled=false;
       }
     }
-  }, 5000); // check every 5 seconds
+  }, 5000);
 }
 
 function showToast(msg,type){
   const t=document.getElementById('toast');
-  t.textContent=msg;t.className='toast '+(type||'');
+  t.textContent=msg; t.className='toast '+(type||'');
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),6000);
+  setTimeout(()=>t.classList.remove('show'),7000);
 }
 </script>
 </body>
