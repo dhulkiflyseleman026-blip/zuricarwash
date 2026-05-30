@@ -386,7 +386,7 @@ async function pay(){
       currency:       'TZS',
       orderReference: orderReference,
       phoneNumber:    phone,
-      // checksum is optional — not set since not mandatory
+
     };
 
     const res      = await fetch(PROXY+encodeURIComponent(CP_USSD_URL),{
