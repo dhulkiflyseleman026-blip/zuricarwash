@@ -787,7 +787,7 @@ async function pay(){
       showToast('📲 USSD prompt sent! Enter your '+networkLabels[mno]+' PIN on your phone.','success');
       document.getElementById('waitingBox').classList.add('on');
       // ── STEP 3: Poll until ClickPesa confirms payment received ─
-      pollPaymentStatus(orderReference, token, btn, cartSnapshot, name, phone, networkLabels[mno]);
+      pollPaymentStatus(orderReference, token, btn, cartSnapshot, name, phone, networkLabels[mno], payload, 0);
     } else {
       throw new Error(data.message || JSON.stringify(data));
     }
@@ -801,10 +801,11 @@ async function pay(){
 
 // ─────────────────────────────────────────────────────────────
 // POLL — confirm PAYMENT RECEIVED from ClickPesa
-// Receipt only shown on SUCCESS / SETTLED — i.e. ClickPesa confirmed
+// If customer ignores/cancels USSD, resend push up to 3 times (every 5s = 15s)
 // ─────────────────────────────────────────────────────────────
-async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, customerName, customerPhone, networkLabel){
-  const maxAttempts = 6;   // 6 × 5s = 30 seconds
+async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, customerName, customerPhone, networkLabel, ussdPayload, retryCount = 0){
+  const maxAttempts = 3;   // 3 × 5s = 15 seconds per round
+  const maxRetries  = 3;   // resend USSD push up to 3 times if no response
   let   attempts    = 0;
 
   const interval = setInterval(async()=>{
@@ -831,19 +832,50 @@ async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, custo
 
         // show receipt — only triggered by ClickPesa SUCCESS response
         showReceipt(payment, orderReference, customerName, customerPhone, networkLabel, cartSnapshot);
-        showToast('✅ Payment confirmed by ClickPesa!','success');
+        showToast('✅ Payment confirmed!','success');
 
-      } else if(payStatus==='FAILED'){
+      } else if(payStatus==='FAILED' || attempts >= maxAttempts){
+        // ── No PIN entered / cancelled — retry USSD push ───────
         clearInterval(interval);
-        btn.classList.remove('loading'); btn.disabled=false;
-        document.getElementById('waitingBox').classList.remove('on');
-        showToast('❌ Payment failed: '+(payment?.message||'You did not complete the payment. Please try again.'),'error');
 
-      } else if(attempts>=maxAttempts){
-        clearInterval(interval);
-        btn.classList.remove('loading'); btn.disabled=false;
-        document.getElementById('waitingBox').classList.remove('on');
-        showToast('⏳ Still waiting for confirmation. If you entered your PIN, your payment is being processed — please wait a moment.','');
+        if(retryCount < maxRetries - 1){
+          const nextRetry = retryCount + 1;
+          showToast(`📲 No response detected. Resending payment prompt… (${nextRetry}/${maxRetries})`, '');
+
+          // Resend USSD push with a fresh order reference
+          try {
+            const newOrderRef = 'ZURI-' + Date.now();
+            const newPayload  = { ...ussdPayload, orderReference: newOrderRef };
+
+            const pushRes  = await fetch(PROXY(CP_USSD_URL), {
+              method:'POST',
+              headers:{
+                'Content-Type':'application/json',
+                'Authorization': token,
+                'client-id':    CP_CLIENT_ID,
+              },
+              body: JSON.stringify(newPayload),
+            });
+            const pushData = JSON.parse(await pushRes.text());
+
+            if(pushRes.ok && pushData.id && (pushData.status==='PROCESSING'||pushData.status==='SUCCESS')){
+              // Poll again with new reference
+              pollPaymentStatus(newOrderRef, token, btn, cartSnapshot, customerName, customerPhone, networkLabel, newPayload, nextRetry);
+            } else {
+              throw new Error(pushData.message || 'Resend failed');
+            }
+          } catch(resendErr){
+            btn.classList.remove('loading'); btn.disabled=false;
+            document.getElementById('waitingBox').classList.remove('on');
+            showToast('❌ Could not resend payment prompt. Please try again.','error');
+          }
+
+        } else {
+          // ── All 3 retries exhausted ─────────────────────────
+          btn.classList.remove('loading'); btn.disabled=false;
+          document.getElementById('waitingBox').classList.remove('on');
+          showToast('❌ Payment not completed. Please tap Pay Now to try again.','error');
+        }
       }
 
     } catch(e){
