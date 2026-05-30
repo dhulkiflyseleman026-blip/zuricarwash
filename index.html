@@ -248,8 +248,12 @@ const WEBHOOK_URL   = 'https://dhulkiflyseleman026-blip.github.io/zuricarwash/we
 // ClickPesa Live API endpoints
 const CP_AUTH_URL   = 'https://api.clickpesa.com/third-parties/generate-token';
 const CP_USSD_URL   = 'https://api.clickpesa.com/third-parties/payments/initiate-ussd-push-request';
-// CORS Proxy — required for browser-based single-file calls
-const PROXY         = 'https://corsproxy.io/?url=';
+// CORS Proxies — tried in order until one works (custom headers need proper forwarding)
+const PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://cors-anywhere.herokuapp.com/${url}`,
+];
 // ══════════════════════════════════════════════════════════════
 
 const SERVICES=[
@@ -360,6 +364,21 @@ function orderRef(){
 // Step 4: ClickPesa sends webhook to WEBHOOK_URL with payment result
 // ──────────────────────────────────────────────────────────────
 
+// ── Try each proxy in turn for a fetch call ───────────────────
+async function fetchWithProxy(url, options){
+  let lastErr;
+  for(const proxyFn of PROXIES){
+    try{
+      const r = await fetch(proxyFn(url), options);
+      // allorigins wraps errors as 200 with HTML sometimes — skip if clearly wrong
+      const ct = r.headers.get('content-type')||'';
+      if(!r.ok && r.status===0) continue;
+      return r;
+    } catch(e){ lastErr=e; }
+  }
+  throw lastErr||new Error('All proxies failed. Check your internet connection.');
+}
+
 async function pay(){
   const name =document.getElementById('custName').value.trim();
   const phone=document.getElementById('phone').value.replace(/\D/g,'');
@@ -381,7 +400,7 @@ async function pay(){
   try {
     // ── STEP 1: Generate JWT Token ─────────────────────────────
     // Auth: POST with ONLY headers — no body, no Content-Type (per ClickPesa docs)
-    const authRes  = await fetch(PROXY+encodeURIComponent(CP_AUTH_URL),{
+    const authRes  = await fetchWithProxy(CP_AUTH_URL,{
       method: 'POST',
       headers:{
         'client-id': CP_CLIENT_ID,
@@ -391,7 +410,7 @@ async function pay(){
     const authText = await authRes.text();
     if(!authText||authText.trim()==='') throw new Error('No response from ClickPesa auth. Check your API Key.');
     let authData;
-    try{ authData=JSON.parse(authText); } catch(e){ throw new Error('Auth response invalid: '+authText.substring(0,80)); }
+    try{ authData=JSON.parse(authText); } catch(e){ throw new Error('Auth response invalid: '+authText.substring(0,120)); }
     if(!authData.success||!authData.token) throw new Error('Auth failed ('+authRes.status+'): '+(authData.message||JSON.stringify(authData)));
     const token = authData.token; // already includes "Bearer " prefix per ClickPesa docs
 
@@ -406,7 +425,7 @@ async function pay(){
     // Generate checksum and add to payload (per ClickPesa docs)
     payload.checksum = await genChecksum(CP_CHECKSUM_KEY, payload);
 
-    const res      = await fetch(PROXY+encodeURIComponent(CP_USSD_URL),{
+    const res      = await fetchWithProxy(CP_USSD_URL,{
       method: 'POST',
       headers:{
         'Content-Type': 'application/json',
@@ -418,7 +437,7 @@ async function pay(){
     const resText  = await res.text();
     if(!resText||resText.trim()==='') throw new Error('No response from ClickPesa checkout. Please try again.');
     let data;
-    try{ data=JSON.parse(resText); } catch(e){ throw new Error('Checkout response invalid: '+resText.substring(0,80)); }
+    try{ data=JSON.parse(resText); } catch(e){ throw new Error('Checkout response invalid: '+resText.substring(0,120)); }
 
     if(res.ok && (data.id||data.status==='PROCESSING'||data.status==='SUCCESS')){
       showToast('📲 Check your phone! Enter your PIN to complete payment...','success');
@@ -444,7 +463,7 @@ async function pollPaymentStatus(orderReference, token, btn){
   const interval = setInterval(async()=>{
     attempts++;
     try {
-      const statusRes  = await fetch(PROXY+encodeURIComponent(CP_STATUS_URL+orderReference),{
+      const statusRes  = await fetchWithProxy(CP_STATUS_URL+orderReference,{
         method:'GET',
         headers:{
           'Authorization': token,
