@@ -787,7 +787,7 @@ async function pay(){
       showToast('📲 USSD prompt sent! Enter your '+networkLabels[mno]+' PIN on your phone.','success');
       document.getElementById('waitingBox').classList.add('on');
       // ── STEP 3: Poll until ClickPesa confirms payment received ─
-      pollPaymentStatus(orderReference, token, btn, cartSnapshot, name, phone, networkLabels[mno], payload, 0);
+      pollPaymentStatus(orderReference, token, btn, cartSnapshot, name, phone, networkLabels[mno]);
     } else {
       throw new Error(data.message || JSON.stringify(data));
     }
@@ -801,11 +801,10 @@ async function pay(){
 
 // ─────────────────────────────────────────────────────────────
 // POLL — confirm PAYMENT RECEIVED from ClickPesa
-// If customer ignores/cancels USSD, resend push up to 3 times (every 5s = 15s)
+// Receipt only shown on SUCCESS / SETTLED — i.e. ClickPesa confirmed
 // ─────────────────────────────────────────────────────────────
-async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, customerName, customerPhone, networkLabel, ussdPayload, retryCount = 0){
-  const maxAttempts = 3;   // 3 × 5s = 15 seconds per round
-  const maxRetries  = 3;   // resend USSD push up to 3 times if no response
+async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, customerName, customerPhone, networkLabel){
+  const maxAttempts = 6;   // 6 × 5s = 30 seconds
   let   attempts    = 0;
 
   const interval = setInterval(async()=>{
@@ -832,45 +831,19 @@ async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, custo
 
         // show receipt — only triggered by ClickPesa SUCCESS response
         showReceipt(payment, orderReference, customerName, customerPhone, networkLabel, cartSnapshot);
-        showToast('✅ Payment confirmed!','success');
+        showToast('✅ Payment confirmed by ClickPesa!','success');
 
-      } else if(payStatus==='FAILED' || attempts >= maxAttempts){
-        // ── No PIN entered / cancelled — retry USSD push ───────
+      } else if(payStatus==='FAILED'){
         clearInterval(interval);
+        btn.classList.remove('loading'); btn.disabled=false;
+        document.getElementById('waitingBox').classList.remove('on');
+        showToast('❌ Payment failed: '+(payment?.message||'You did not complete the payment. Please try again.'),'error');
 
-        if(retryCount < maxRetries){
-          const nextRetry = retryCount + 1;
-          showToast(`📲 No response. Resending payment prompt… (${nextRetry}/${maxRetries})`, '');
-
-          // Resend USSD push — reuse same payload and order reference
-          try {
-            const pushRes  = await fetch(PROXY(CP_USSD_URL), {
-              method:'POST',
-              headers:{
-                'Content-Type':'application/json',
-                'Authorization': token,
-                'client-id':    CP_CLIENT_ID,
-              },
-              body: JSON.stringify(ussdPayload),
-            });
-            const rawText = await pushRes.text();
-            let pushData = {};
-            try { pushData = JSON.parse(rawText); } catch(e){}
-
-            // Continue polling regardless — ClickPesa may still process it
-            pollPaymentStatus(ussdPayload.orderReference, token, btn, cartSnapshot, customerName, customerPhone, networkLabel, ussdPayload, nextRetry);
-
-          } catch(resendErr){
-            // Network error on resend — still keep polling
-            pollPaymentStatus(ussdPayload.orderReference, token, btn, cartSnapshot, customerName, customerPhone, networkLabel, ussdPayload, nextRetry);
-          }
-
-        } else {
-          // ── All 3 retries exhausted ─────────────────────────
-          btn.classList.remove('loading'); btn.disabled=false;
-          document.getElementById('waitingBox').classList.remove('on');
-          showToast('❌ Payment not completed. Please tap Pay Now to try again.','error');
-        }
+      } else if(attempts>=maxAttempts){
+        clearInterval(interval);
+        btn.classList.remove('loading'); btn.disabled=false;
+        document.getElementById('waitingBox').classList.remove('on');
+        showToast('⏳ Still waiting for confirmation. If you entered your PIN, your payment is being processed — please wait a moment.','');
       }
 
     } catch(e){
