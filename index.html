@@ -838,15 +838,12 @@ async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, custo
         // ── No PIN entered / cancelled — retry USSD push ───────
         clearInterval(interval);
 
-        if(retryCount < maxRetries - 1){
+        if(retryCount < maxRetries){
           const nextRetry = retryCount + 1;
-          showToast(`📲 No response detected. Resending payment prompt… (${nextRetry}/${maxRetries})`, '');
+          showToast(`📲 No response. Resending payment prompt… (${nextRetry}/${maxRetries})`, '');
 
-          // Resend USSD push with a fresh order reference
+          // Resend USSD push — reuse same payload and order reference
           try {
-            const newOrderRef = 'ZURI-' + Date.now();
-            const newPayload  = { ...ussdPayload, orderReference: newOrderRef };
-
             const pushRes  = await fetch(PROXY(CP_USSD_URL), {
               method:'POST',
               headers:{
@@ -854,20 +851,18 @@ async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, custo
                 'Authorization': token,
                 'client-id':    CP_CLIENT_ID,
               },
-              body: JSON.stringify(newPayload),
+              body: JSON.stringify(ussdPayload),
             });
-            const pushData = JSON.parse(await pushRes.text());
+            const rawText = await pushRes.text();
+            let pushData = {};
+            try { pushData = JSON.parse(rawText); } catch(e){}
 
-            if(pushRes.ok && pushData.id && (pushData.status==='PROCESSING'||pushData.status==='SUCCESS')){
-              // Poll again with new reference
-              pollPaymentStatus(newOrderRef, token, btn, cartSnapshot, customerName, customerPhone, networkLabel, newPayload, nextRetry);
-            } else {
-              throw new Error(pushData.message || 'Resend failed');
-            }
+            // Continue polling regardless — ClickPesa may still process it
+            pollPaymentStatus(ussdPayload.orderReference, token, btn, cartSnapshot, customerName, customerPhone, networkLabel, ussdPayload, nextRetry);
+
           } catch(resendErr){
-            btn.classList.remove('loading'); btn.disabled=false;
-            document.getElementById('waitingBox').classList.remove('on');
-            showToast('❌ Could not resend payment prompt. Please try again.','error');
+            // Network error on resend — still keep polling
+            pollPaymentStatus(ussdPayload.orderReference, token, btn, cartSnapshot, customerName, customerPhone, networkLabel, ussdPayload, nextRetry);
           }
 
         } else {
