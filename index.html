@@ -376,19 +376,19 @@ async function pay(){
 
   try {
     // ── STEP 1: Generate JWT Token ─────────────────────────────
-    const {data:authData} = await safeJson(
+    // Auth: POST with client-id and api-key as headers only — no body (per ClickPesa docs)
+    const {data:authData, status:authStatus} = await safeJson(
       await fetch(PROXY+encodeURIComponent(CP_AUTH_URL),{
         method:'POST',
         headers:{
-          'Content-Type':'application/json',
-          'client-id':   CP_CLIENT_ID,
-          'api-key':     CP_API_KEY,
+          'client-id': CP_CLIENT_ID,
+          'api-key':   CP_API_KEY,
         },
       })
     );
-    if(!authData.success||!authData.token)
-      throw new Error(authData.message||'Authentication failed. Check your API Key and Client ID.');
-    const token = authData.token; // already includes "Bearer " prefix
+    if(authStatus!==200||!authData.success||!authData.token)
+      throw new Error('Auth failed ('+authStatus+'): '+(authData.message||JSON.stringify(authData)));
+    const token = authData.token; // already includes "Bearer " prefix per ClickPesa docs
 
     const headers = {
       'Content-Type': 'application/json',
@@ -435,7 +435,7 @@ async function pay(){
       showToast('✅ Check your phone! Enter your mobile money PIN to complete payment.','success');
       setTimeout(()=>{ window.location.href=RETURN_URL+'?orderReference='+orderReference; },5000);
     } else {
-      throw new Error(data.message||data.error||JSON.stringify(data));
+      throw new Error(JSON.stringify(data)); // show full error for debugging
     }
 
   } catch(e){
