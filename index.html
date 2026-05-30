@@ -843,7 +843,7 @@ async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, custo
         clearInterval(interval);
         btn.classList.remove('loading'); btn.disabled=false;
         document.getElementById('waitingBox').classList.remove('on');
-        showToast('⏳ Still waiting for ClickPesa confirmation. If you entered your PIN, your payment is being processed — check your ClickPesa dashboard.','');
+        showToast('⏳ Still waiting for confirmation. If you entered your PIN, your payment is being processed — please wait a moment.','');
       }
 
     } catch(e){
@@ -851,7 +851,7 @@ async function pollPaymentStatus(orderReference, token, btn, cartSnapshot, custo
         clearInterval(interval);
         btn.classList.remove('loading'); btn.disabled=false;
         document.getElementById('waitingBox').classList.remove('on');
-        showToast('❌ Could not confirm payment status. Please check your ClickPesa dashboard.','error');
+        showToast('❌ Could not confirm payment status. Please try again or contact support.','error');
       }
     }
   }, 5000);
